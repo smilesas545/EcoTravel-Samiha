@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTravel | Sustainable Adventure Finder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2a9d8f;
+            --primary-dark: #21867a;
+            --secondary: #e9c46a;
+            --accent: #e76f51;
+            --light: #f8f9fa;
+            --dark: #264653;
+            --gray: #6c757d;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: white;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            margin-right: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 30px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .cta-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .cta-button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .mobile-menu {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Auth Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .auth-modal {
+            background-color: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            padding: 40px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(-30px);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active .auth-modal {
+            transform: translateY(0);
+        }
+
+        .auth-modal h2 {
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .auth-modal p {
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .auth-tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            font-weight: 600;
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .auth-tab.active {
+            color: var(--primary);
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .auth-submit {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 10px;
+        }
+
+        .auth-submit:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--gray);
+        }
+
+        .auth-switch button {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            color: var(--dark);
+        }
+
+        /* User Profile Styles */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            color: var(--accent);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(42, 157, 143, 0.85), rgba(38, 70, 83, 0.9)), url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1474&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 180px 0 120px;
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 40px;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background-color: white;
+            border-radius: 50px;
+            padding: 5px;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            padding: 20px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .search-button:hover {
+            background-color: #d65c3e;
+        }
+
+        /* Features Section */
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+
+        .section-title p {
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features {
+            padding: 100px 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            background-color: rgba(42, 157, 143, 0.1);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            color: var(--primary);
+            font-size: 2rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+
+        /* Destinations Section */
+        .destinations {
+            padding: 100px 0;
+            background-color: #f1f7f6;
+        }
+
+        .destination-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .destination-card {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .destination-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .destination-img {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+        }
+
+        .destination-info {
+            padding: 25px;
+        }
+
+        .destination-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .destination-info p {
+            color: var(--gray);
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .destination-rating {
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        .eco-badge {
+            display: inline-block;
+            background-color: rgba(42, 157, 143, 0.1);
+            color: var(--primary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Wishlist Button */
+        .wishlist-btn {
+            background-color: rgba(231, 111, 81, 0.1);
+            color: var(--accent);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wishlist-btn:hover {
+            background-color: rgba(231, 111, 81, 0.2);
+        }
+
+        .wishlist-btn.added {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 80px 0;
+            background-color: var(--primary);
+            color: white;
+            text-align: center;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            margin: 20px;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Newsletter Section */
+        .newsletter {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .newsletter-form {
+            max-width: 600px;
+            margin: 40px auto 0;
+            display: flex;
+        }
+
+        .newsletter-form input {
+            flex: 1;
+            padding: 18px 25px;
+            border: 2px solid #ddd;
+            border-radius: 50px 0 0 50px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .newsletter-form button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0 35px;
+            border-radius: 0 50px 50px 0;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .newsletter-form button:hover {
+            background-color: #d65c3e;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 70px 0 30px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.3rem;
+            margin-bottom: 25px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 3px;
+            background-color: var(--primary);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: #b0b7c3;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: white;
+            padding-left: 5px;
+        }
+
+        .social-icons {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .social-icons a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-right: 10px;
+            color: white;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .social-icons a:hover {
+            background-color: var(--primary);
+            transform: translateY(-5px);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #b0b7c3;
+            font-size: 0.9rem;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background-color: rgba(42, 157, 143, 0.1);
+            color: var(--primary);
+            border-left: 4px solid var(--primary);
+        }
+
+        .alert.error {
+            background-color: rgba(231, 111, 81, 0.1);
+            color: var(--accent);
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            
+            .stats-container {
+                justify-content: center;
+            }
+            
+            .stat-item {
+                width: 40%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: white;
+                padding: 20px;
+                box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            }
+            
+            .nav-links.active {
+                display: flex;
+            }
+            
+            .nav-links li {
+                margin: 15px 0;
+                margin-left: 0;
+            }
+            
+            .mobile-menu {
+                display: block;
+            }
+            
+            .hero {
+                padding: 150px 0 100px;
+            }
+            
+            .hero h1 {
+                font-size: 2.3rem;
+            }
+            
+            .search-box {
+                flex-direction: column;
+                border-radius: 10px;
+                padding: 20px;
+            }
+            
+            .search-box input {
+                margin-bottom: 15px;
+                border-radius: 10px;
+            }
+            
+            .search-button {
+                border-radius: 10px;
+            }
+            
+            .newsletter-form {
+                flex-direction: column;
+            }
+            
+            .newsletter-form input {
+                border-radius: 10px;
+                margin-bottom: 15px;
+            }
+            
+            .newsletter-form button {
+                border-radius: 10px;
+                padding: 18px;
+            }
+            
+            .stat-item {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .section-title h2 {
+                font-size: 2rem;
+            }
+            
+            .features, .destinations, .newsletter {
+                padding: 70px 0;
+            }
+            
+            .auth-modal {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-leaf"></i>
+                    EcoTravel
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#destinations">Destinations</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                
+                <div id="auth-buttons">
+                    <!-- This will be populated by JavaScript based on auth state -->
+                </div>
+                
+                <div class="mobile-menu">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="auth-modal">
+            <button class="close-modal" id="close-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="login-tab">Login</button>
+                <button class="auth-tab" id="signup-tab">Sign Up</button>
+            </div>
+            
+            <div class="auth-form active" id="login-form">
+                <h2>Welcome Back</h2>
+                <p>Sign in to your EcoTravel account</p>
+                
+                <div class="alert" id="login-alert"></div>
+                
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password">
+                </div>
+                
+                <button class="auth-submit" id="login-submit">Login</button>
+                
+                <div class="auth-switch">
+                    <span>Don't have an account? </span>
+                    <button id="switch-to-signup">Sign up</button>
+                </div>
+            </div>
+            
+            <div class="auth-form" id="signup-form">
+                <h2>Join EcoTravel</h2>
+                <p>Create your account to save favorite destinations</p>
+                
+                <div class="alert" id="signup-alert"></div>
+                
+                <div class="form-group">
+                    <label for="signup-name">Full Name</label>
+                    <input type="text" id="signup-name" placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Create a password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-confirm">Confirm Password</label>
+                    <input type="password" id="signup-confirm" placeholder="Confirm your password">
+                </div>
+                
+                <button class="auth-submit" id="signup-submit">Create Account</button>
+                
+                <div class="auth-switch">
+                    <span>Already have an account? </span>
+                    <button id="switch-to-login">Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Discover Sustainable Adventures Around the World</h1>
+            <p>Find eco-friendly travel experiences that respect our planet and support local communities. Explore breathtaking destinations while leaving a positive footprint.</p>
+            <div class="search-box">
+                <input type="text" id="destination-search" placeholder="Where do you want to go?">
+                <button class="search-button" id="search-button">Find Adventures</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Why Choose EcoTravel?</h2>
+                <p>We're committed to making travel sustainable, ethical, and unforgettable.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe-americas"></i>
+                    </div>
+                    <h3>Eco-Certified</h3>
+                    <p>All our partners meet strict sustainability standards and are certified by leading environmental organizations.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-hands-helping"></i>
+                    </div>
+                    <h3>Community-Focused</h3>
+                    <p>Our adventures directly benefit local communities, ensuring your travel has a positive social impact.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <h3>Carbon Offset</h3>
+                    <p>We automatically offset the carbon footprint of every trip booked through our platform.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Destinations Section -->
+    <section class="destinations" id="destinations">
+        <div class="container">
+            <div class="section-title">
+                <h2>Popular Eco-Destinations</h2>
+                <p>Explore our curated selection of sustainable travel destinations around the world.</p>
+            </div>
+            <div class="destination-grid" id="destination-grid">
+                <!-- Destinations will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-container">
+                <div class="stat-item">
+                    <div class="stat-number">15,000+</div>
+                    <div class="stat-label">Trees Planted</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">280+</div>
+                    <div class="stat-label">Eco-Partners</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">42</div>
+                    <div class="stat-label">Countries</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="happy-travelers">9,850+</div>
+                    <div class="stat-label">Happy Travelers</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="newsletter">
+        <div class="container">
+            <div class="section-title">
+                <h2>Stay Updated on Sustainable Travel</h2>
+                <p>Subscribe to our newsletter for exclusive eco-travel tips, new destinations, and special offers.</p>
+            </div>
+            <form class="newsletter-form" id="newsletter-form">
+                <input type="email" id="newsletter-email" placeholder="Enter your email address">
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>EcoTravel</h3>
+                    <p>Making sustainable travel accessible and rewarding for everyone. Join us in exploring our beautiful planet responsibly.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#destinations">Destinations</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Contact Info</h3>
+                    <ul class="footer-links">
+                        <li><i class="fas fa-map-marker-alt"></i> 123 Green Street, Earth</li>
+                        <li><i class="fas fa-phone"></i> +1 (555) 123-4567</li>
+                        <li><i class="fas fa-envelope"></i> hello@ecotravel.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2023 EcoTravel. All rights reserved. | Designed with <i class="fas fa-heart" style="color: var(--accent);"></i> for our planet.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDEXAMPLEKEYCHANGETHIS",
+            authDomain: "ecotravel-website.firebaseapp.com",
+            projectId: "ecotravel-website",
+            storageBucket: "ecotravel-website.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abc123def456ghi789jkl"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM Elements
+        const authModal = document.getElementById('auth-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const loginTab = document.getElementById('login-tab');
+        const signupTab = document.getElementById('signup-tab');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const switchToSignupBtn = document.getElementById('switch-to-signup');
+        const switchToLoginBtn = document.getElementById('switch-to-login');
+        const loginSubmitBtn = document.getElementById('login-submit');
+        const signupSubmitBtn = document.getElementById('signup-submit');
+        const authButtonsContainer = document.getElementById('auth-buttons');
+        const mobileMenuBtn = document.querySelector('.mobile-menu');
+        const navLinks = document.querySelector('.nav-links');
+        const destinationGrid = document.getElementById('destination-grid');
+        const searchButton = document.getElementById('search-button');
+        const newsletterForm = document.getElementById('newsletter-form');
+        const happyTravelers = document.getElementById('happy-travelers');
+
+        // Sample Destinations Data
+        const destinations = [
+            {
+                id: 1,
+                name: "Costa Rica Rainforest",
+                image: "https://images.unsplash.com/photo-1536152470836-b943b246224c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1473&q=80",
+                description: "Explore the biodiversity of Costa Rica's rainforests with certified eco-guides. Stay in sustainable treehouse lodges.",
+                rating: 4.5,
+                reviews: 128,
+                badge: "Eco-Certified",
+                price: "$1,299"
+            },
+            {
+                id: 2,
+                name: "Norwegian Fjords",
+                image: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?ixlib=rb-4.0.3&auto=format&fit=crop&w=1472&q=80",
+                description: "Kayak through pristine fjords, hike breathtaking trails, and stay in eco-friendly cabins powered by renewable energy.",
+                rating: 5.0,
+                reviews: 94,
+                badge: "Carbon Neutral",
+                price: "$1,899"
+            },
+            {
+                id: 3,
+                name: "Bhutan Himalayas",
+                image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
+                description: "Experience the world's only carbon-negative country through community-based tourism and cultural immersion.",
+                rating: 5.0,
+                reviews: 67,
+                badge: "Community-Focused",
+                price: "$2,499"
+            },
+            {
+                id: 4,
+                name: "Amazon Rainforest",
+                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1471&q=80",
+                description: "Immerse yourself in the world's largest rainforest with indigenous guides and sustainable eco-lodges.",
+                rating: 4.7,
+                reviews: 89,
+                badge: "Eco-Certified",
+                price: "$1,599"
+            },
+            {
+                id: 5,
+                name: "New Zealand Wilderness",
+                image: "https://images.unsplash.com/photo-1507699622108-4be3abd695ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=1471&q=80",
+                description: "Discover New Zealand's pristine landscapes through eco-friendly hiking, cycling, and wildlife watching tours.",
+                rating: 4.8,
+                reviews: 112,
+                badge: "Carbon Neutral",
+                price: "$2,199"
+            },
+            {
+                id: 6,
+                name: "Kenyan Safari",
+                image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?ixlib=rb-4.0.3&auto=format&fit=crop&w=1468&q=80",
+                description: "Experience wildlife conservation first-hand with eco-conscious safari lodges and community tourism initiatives.",
+                rating: 4.9,
+                reviews: 76,
+                badge: "Community-Focused",
+                price: "$2,799"
+            }
+        ];
+
+        // User's wishlist (in a real app, this would be stored in Firestore)
+        let userWishlist = [];
+
+        // Initialize the app
+        function initApp() {
+            // Render destinations
+            renderDestinations();
+            
+            // Set up auth state listener
+            auth.onAuthStateChanged(user => {
+                updateAuthUI(user);
+                
+                // Load user's wishlist if logged in
+                if (user) {
+                    loadUserWishlist(user.uid);
+                } else {
+                    userWishlist = [];
+                    renderDestinations(); // Re-render without wishlist buttons
+                }
+            });
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        // Render destinations to the page
+        function renderDestinations() {
+            destinationGrid.innerHTML = '';
+            
+            destinations.forEach(destination => {
+                const isInWishlist = userWishlist.includes(destination.id);
+                const destinationCard = document.createElement('div');
+                destinationCard.className = 'destination-card';
+                destinationCard.innerHTML = `
+                    <img src="${destination.image}" alt="${destination.name}" class="destination-img">
+                    <div class="destination-info">
+                        <h3>${destination.name}</h3>
+                        <div class="destination-rating">
+                            ${renderStars(destination.rating)}
+                            <span>${destination.rating} (${destination.reviews} reviews)</span>
+                        </div>
+                        <p>${destination.description}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                            <span class="eco-badge">${destination.badge}</span>
+                            <span style="font-weight: 600; color: var(--dark);">${destination.price}</span>
+                        </div>
+                        ${auth.currentUser ? `
+                            <button class="wishlist-btn ${isInWishlist ? 'added' : ''}" data-id="${destination.id}">
+                                <i class="fas fa-heart"></i>
+                                ${isInWishlist ? 'Added to Wishlist' : 'Add to Wishlist'}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                destinationGrid.appendChild(destinationCard);
+            });
+            
+            // Add event listeners to wishlist buttons
+            document.querySelectorAll('.wishlist-btn').forEach(button => {
+                button.addEventListener('click', handleWishlistToggle);
+            });
+        }
+
+        // Render star ratings
+        function renderStars(rating) {
+            let stars = '';
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 >= 0.5;
+            
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star"></i>';
+            }
+            
+            if (hasHalfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>';
+            }
+            
+            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="far fa-star"></i>';
+            }
+            
+            return stars;
+        }
+
+        // Update auth UI based on user state
+        function updateAuthUI(user) {
+            if (user) {
+                // User is logged in
+                const firstName = user.displayName ? user.displayName.split(' ')[0] : 'User';
+                const initial = firstName.charAt(0).toUpperCase();
+                
+                authButtonsContainer.innerHTML = `
+                    <div class="user-profile">
+                        <div class="user-avatar">${initial}</div>
+                        <span class="user-name">${firstName}</span>
+                        <button class="logout-btn" id="logout-button">Logout</button>
+                    </div>
+                `;
+                
+                // Add logout event listener
+                document.getElementById('logout-button').addEventListener('click', handleLogout);
+            } else {
+                // User is logged out
+                authButtonsContainer.innerHTML = `
+                    <button class="cta-button" id="login-button">Login / Sign Up</button>
+                `;
+                
+                // Add login event listener
+                document.getElementById('login-button').addEventListener('click', showAuthModal);
+            }
+        }
+
+        // Show auth modal
+        function showAuthModal() {
+            authModal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        // Hide auth modal
+        function hideAuthModal() {
+            authModal.classList.remove('active');
+            document.body.style.overflow = 'auto'; // Re-enable scrolling
+        }
+
+        // Handle login
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const alertDiv = document.getElementById('login-alert');
+            
+            // Validate inputs
+            if (!email || !password) {
+                showAlert(alertDiv, 'Please fill in all fields', 'error');
+                return;
+            }
+            
+            try {
+                // Sign in with Firebase
+                await auth.signInWithEmailAndPassword(email, password);
+                showAlert(alertDiv, 'Login successful!', 'success');
+                setTimeout(hideAuthModal, 1500);
+            } catch (error) {
+                // Handle errors
+                let errorMessage = 'Login failed. Please try again.';
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'No account found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Incorrect password. Please try again.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address.';
+                        break;
+                }
+                
+                showAlert(alertDiv, errorMessage, 'error');
+            }
+        }
+
+        // Handle signup
+        async function handleSignup() {
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm').value;
+            const alertDiv = document.getElementById('signup-alert');
+            
+            // Validate inputs
+            if (!name || !email || !password || !confirmPassword) {
+                showAlert(alertDiv, 'Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showAlert(alertDiv, 'Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert(alertDiv, 'Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            try {
+                // Create user with Firebase
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Update user profile with name
+                await userCredential.user.updateProfile({
+                    displayName: name
+                });
+                
+                // Create user document in Firestore
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    name: name,
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    newsletterSubscribed: false
+                });
+                
+                // Update happy travelers count
+                updateHappyTravelersCount();
+                
+                showAlert(alertDiv, 'Account created successfully!', 'success');
+                setTimeout(hideAuthModal, 1500);
+            } catch (error) {
+                // Handle errors
+                let errorMessage = 'Signup failed. Please try again.';
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'Email already in use. Please login instead.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Password is too weak. Please choose a stronger password.';
+                        break;
+                }
+                
+                showAlert(alertDiv, errorMessage, 'error');
+            }
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        // Handle wishlist toggle
+        function handleWishlistToggle(event) {
+            const destinationId = parseInt(event.currentTarget.getAttribute('data-id'));
+            const user = auth.currentUser;
+            
+            if (!user) {
+                showAuthModal();
+                return;
+            }
+            
+            // Toggle wishlist status
+            const index = userWishlist.indexOf(destinationId);
+            
+            if (index === -1) {
+                // Add to wishlist
+                userWishlist.push(destinationId);
+                event.currentTarget.classList.add('added');
+                event.currentTarget.innerHTML = '<i class="fas fa-heart"></i> Added to Wishlist';
+                
+                // Save to Firestore
+                saveWishlistToFirestore(user.uid);
+            } else {
+                // Remove from wishlist
+                userWishlist.splice(index, 1);
+                event.currentTarget.classList.remove('added');
+                event.currentTarget.innerHTML = '<i class="fas fa-heart"></i> Add to Wishlist';
+                
+                // Save to Firestore
+                saveWishlistToFirestore(user.uid);
+            }
+        }
+
+        // Save wishlist to Firestore
+        async function saveWishlistToFirestore(userId) {
+            try {
+                await db.collection('wishlists').doc(userId).set({
+                    destinations: userWishlist,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            } catch (error) {
+                console.error('Error saving wishlist:', error);
+            }
+        }
+
+        // Load user's wishlist from Firestore
+        async function loadUserWishlist(userId) {
+            try {
+                const wishlistDoc = await db.collection('wishlists').doc(userId).get();
+                
+                if (wishlistDoc.exists) {
+                    userWishlist = wishlistDoc.data().destinations || [];
+                    renderDestinations(); // Re-render with wishlist status
+                }
+            } catch (error) {
+                console.error('Error loading wishlist:', error);
+            }
+        }
+
+        // Update happy travelers count
+        async function updateHappyTravelersCount() {
+            try {
+                // Get count of users from Firestore
+                const usersSnapshot = await db.collection('users').get();
+                const count = usersSnapshot.size;
+                
+                // Update the display
+                happyTravelers.textContent = `${9,850 + count}+`;
+            } catch (error) {
+                console.error('Error updating travelers count:', error);
+            }
+        }
+
+        // Show alert message
+        function showAlert(alertElement, message, type) {
+            alertElement.textContent = message;
+            alertElement.className = `alert ${type}`;
+            alertElement.style.display = 'block';
+            
+            // Clear alert after 5 seconds
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Auth modal tabs
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('active');
+                signupTab.classList.remove('active');
+                loginForm.classList.add('active');
+                signupForm.classList.remove('active');
+            });
+            
+            signupTab.addEventListener('click', () => {
+                signupTab.classList.add('active');
+                loginTab.classList.remove('active');
+                signupForm.classList.add('active');
+                loginForm.classList.remove('active');
+            });
+            
+            // Switch between forms
+            switchToSignupBtn.addEventListener('click', () => {
+                signupTab.click();
+            });
+            
+            switchToLoginBtn.addEventListener('click', () => {
+                loginTab.click();
+            });
+            
+            // Form submissions
+            loginSubmitBtn.addEventListener('click', handleLogin);
+            signupSubmitBtn.addEventListener('click', handleSignup);
+            
+            // Modal close
+            closeModalBtn.addEventListener('click', hideAuthModal);
+            authModal.addEventListener('click', (e) => {
+                if (e.target === authModal) {
+                    hideAuthModal();
+                }
+            });
+            
+            // Mobile menu toggle
+            mobileMenuBtn.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+            });
+            
+            // Search button
+            searchButton.addEventListener('click', () => {
+                const searchInput = document.getElementById('destination-search');
+                if (searchInput.value.trim() === '') {
+                    alert('Please enter a destination to search for!');
+                    searchInput.focus();
+                } else {
+                    alert(`Searching for eco-friendly adventures in: ${searchInput.value}`);
+                    searchInput.value = '';
+                }
+            });
+            
+            // Newsletter subscription
+            newsletterForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const emailInput = document.getElementById('newsletter-email');
+                const email = emailInput.value.trim();
+                
+                if (email === '') {
+                    alert('Please enter your email address!');
+                    emailInput.focus();
+                    return;
+                }
+                
+                if (!isValidEmail(email)) {
+                    alert('Please enter a valid email address!');
+                    emailInput.focus();
+                    return;
+                }
+                
+                // Save to Firestore if user is logged in
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        await db.collection('users').doc(user.uid).update({
+                            newsletterSubscribed: true,
+                            newsletterEmail: email
+                        });
+                        alert(`Thank you for subscribing with: ${email}`);
+                    } catch (error) {
+                        console.error('Error saving newsletter subscription:', error);
+                        alert(`Thank you for subscribing with: ${email}`);
+                    }
+                } else {
+                    alert(`Thank you for subscribing with: ${email}`);
+                }
+                
+                emailInput.value = '';
+            });
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Close mobile menu if open
+                        if (window.innerWidth <= 768) {
+                            navLinks.classList.remove('active');
+                        }
+                    }
+                });
+            });
+            
+            // Update nav links display on window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    navLinks.style.display = 'flex';
+                } else {
+                    navLinks.style.display = 'none';
+                }
+            });
+        }
+
+        // Simple email validation
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
